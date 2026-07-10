@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#F97316">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Chicken Point">
+<title>Chicken Point · Gestão</title>
+<style>
+  :root{
+    --lar:#F97316; --lar-esc:#EA580C; --lar-claro:#FFF3E8; --lar-borda:#FDD9B8;
+    --tinta:#241611; --cinza:#8A7F79; --cinza-claro:#C9C1BC;
+    --papel:#FAF7F5; --branco:#FFFFFF; --borda:#EEE7E2;
+    --verm:#DC2626; --verm-fundo:#FEE8E8; --verde:#16A34A; --verde-fundo:#E9F9EE;
+    --amar-fundo:#FEF6E0; --amar-texto:#A16207;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{font-size:16px}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:var(--papel);color:var(--tinta);
+    padding-bottom:calc(76px + env(safe-area-inset-bottom));
+  }
+  .wrap{max-width:480px;margin:0 auto;padding:0 16px}
+
+  /* Cabeçalho */
+  header{
+    position:sticky;top:0;z-index:20;background:rgba(255,255,255,.94);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--borda);
+    padding:calc(12px + env(safe-area-inset-top)) 0 12px;
+  }
+  .marca{display:flex;align-items:center;gap:12px}
+  .logo{width:42px;height:42px;border-radius:14px;background:var(--lar);
+    display:flex;align-items:center;justify-content:center;font-size:22px;
+    box-shadow:0 4px 10px rgba(249,115,22,.35)}
+  .marca h1{font-size:17px;font-weight:800;letter-spacing:-.3px;line-height:1.1}
+  .marca small{font-size:12px;font-weight:700;color:var(--lar)}
+  .sino{position:relative;margin-left:auto;background:var(--lar-claro);border:none;
+    border-radius:999px;width:40px;height:40px;font-size:18px}
+  .sino b{position:absolute;top:-4px;right:-4px;background:var(--verm);color:#fff;
+    border-radius:999px;min-width:19px;height:19px;font-size:11px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;padding:0 4px}
+  #sync{font-size:10px;color:var(--cinza);margin-left:auto;padding-right:2px}
+
+  main{padding-top:18px}
+  h2{font-size:19px;font-weight:800;letter-spacing:-.3px}
+  .secao{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;
+    color:var(--cinza);margin:20px 0 8px;display:flex;align-items:center;gap:6px}
+  .secao .cont{background:#F1EAE5;color:var(--cinza);border-radius:999px;
+    padding:1px 8px;font-size:11px}
+  .topo{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+
+  /* Cards e listas */
+  .card{background:var(--branco);border:1px solid var(--borda);border-radius:18px;
+    padding:14px;margin-bottom:8px}
+  .card.alerta-verm{background:var(--verm-fundo);border-color:#F5C2C2;color:#991B1B}
+  .card.alerta-lar{background:var(--lar-claro);border-color:var(--lar-borda);color:#9A3412}
+  .card.alerta-amar{background:var(--amar-fundo);border-color:#F1DFA8;color:var(--amar-texto)}
+  .card.ok{background:var(--verde-fundo);border-color:#BCE8CB;color:#166534;font-weight:600;font-size:14px}
+  .alerta-txt{font-size:14px;font-weight:600;line-height:1.35}
+
+  .linha{display:flex;align-items:center;gap:10px}
+  .cresce{flex:1;min-width:0}
+  .nome{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sub{font-size:12px;color:var(--cinza);margin-top:1px}
+  .tag{font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;display:inline-block}
+  .tag.verm{background:var(--verm-fundo);color:var(--verm)}
+  .tag.lar{background:var(--lar-claro);color:var(--lar-esc)}
+  .tag.amar{background:var(--amar-fundo);color:var(--amar-texto)}
+  .tag.neutro{background:#F1EAE5;color:var(--cinza)}
+
+  /* Resumo do mês */
+  .grade2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .kpi{border-radius:18px;padding:14px;border:1px solid var(--borda);background:var(--branco)}
+  .kpi.destaque{background:var(--lar);border-color:var(--lar);color:#fff;
+    box-shadow:0 6px 14px rgba(249,115,22,.3)}
+  .kpi p{font-size:12px;font-weight:600;opacity:.75}
+  .kpi b{display:block;font-size:20px;font-weight:800;margin-top:3px;letter-spacing:-.4px}
+  .kpi .verm{color:var(--verm)}
+  .kpi .lar{color:var(--lar-esc)}
+
+  /* Botões */
+  .btn{border:none;border-radius:14px;font-weight:800;font-size:14px;cursor:pointer}
+  .btn-cheio{width:100%;padding:14px;background:var(--lar);color:#fff}
+  .btn-cheio:active{background:var(--lar-esc)}
+  .btn-pill{background:var(--lar);color:#fff;border-radius:999px;padding:9px 16px;font-size:12px}
+  .btn-mini{background:var(--lar);color:#fff;border-radius:999px;padding:7px 12px;
+    font-size:12px;white-space:nowrap}
+  .btn-fantasma{background:none;color:var(--cinza-claro);padding:6px;font-size:15px}
+  .qtd-btn{width:32px;height:32px;border-radius:999px;border:1px solid var(--cinza-claro);
+    background:var(--branco);font-size:17px;font-weight:700;color:var(--tinta)}
+  .qtd-btn.mais{background:var(--lar);border-color:var(--lar);color:#fff}
+  .qtd-num{min-width:38px;text-align:center;font-weight:800;font-size:15px}
+
+  /* Formulários */
+  .form{background:var(--lar-claro);border:1px solid var(--lar-borda);border-radius:18px;
+    padding:16px;margin-bottom:14px}
+  .form .titulo{font-size:11px;font-weight:800;text-transform:uppercase;
+    letter-spacing:.09em;color:var(--lar-esc);margin-bottom:10px}
+  label{display:block;margin-bottom:10px}
+  label span{font-size:11px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--cinza)}
+  input,select{width:100%;margin-top:4px;padding:11px 12px;border-radius:12px;
+    border:1px solid var(--borda);background:var(--branco);font-size:15px;
+    font-family:inherit;color:var(--tinta);appearance:none;-webkit-appearance:none}
+  input:focus,select:focus{outline:none;border-color:var(--lar)}
+  .chk{display:flex;align-items:flex-start;gap:10px;background:var(--branco);
+    border:1px solid var(--borda);border-radius:12px;padding:12px;margin-bottom:10px}
+  .chk input{width:20px;height:20px;margin-top:2px;accent-color:var(--lar)}
+  .chk b{font-size:14px}
+  .chk small{display:block;font-size:12px;color:var(--cinza);margin-top:2px}
+
+  /* Sub-abas relatórios */
+  .subabas{display:flex;gap:8px;margin-bottom:14px}
+  .subabas button{flex:1;border:1px solid var(--borda);background:var(--branco);
+    color:var(--cinza);border-radius:999px;padding:9px 4px;font-size:12px;font-weight:800}
+  .subabas button.ativo{background:var(--lar);border-color:var(--lar);color:#fff}
+
+  /* Gráfico */
+  .grafico{display:flex;align-items:flex-end;gap:8px;height:130px;padding-top:8px}
+  .grafico .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+  .grafico .barra{width:100%;background:var(--lar);border-radius:8px 8px 3px 3px;min-height:8px}
+  .grafico small{font-size:10px;color:var(--cinza)}
+
+  /* Vazio */
+  .vazio{text-align:center;padding:44px 20px;color:var(--cinza)}
+  .vazio .icone{font-size:34px;background:var(--lar-claro);width:72px;height:72px;
+    border-radius:999px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+  .vazio b{display:block;color:var(--tinta);font-size:14px;margin-bottom:4px}
+  .vazio p{font-size:12px;max-width:250px;margin:0 auto;line-height:1.4}
+
+  /* Navegação inferior */
+  nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--branco);
+    border-top:1px solid var(--borda);padding-bottom:env(safe-area-inset-bottom)}
+  .nav-in{max-width:480px;margin:0 auto;display:flex}
+  nav button{flex:1;background:none;border:none;padding:9px 0 7px;display:flex;
+    flex-direction:column;align-items:center;gap:2px;font-family:inherit}
+  nav .ico{font-size:20px;filter:grayscale(1) opacity(.42);position:relative}
+  nav button.ativo .ico{filter:none}
+  nav .rotulo{font-size:10px;font-weight:800;color:var(--cinza-claro)}
+  nav button.ativo .rotulo{color:var(--lar)}
+  nav .badge{position:absolute;top:-5px;right:-11px;background:var(--verm);color:#fff;
+    border-radius:999px;min-width:17px;height:17px;font-size:10px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;padding:0 4px;filter:none}
+
+  /* Toast */
+  #toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));
+    transform:translateX(-50%) translateY(20px);background:var(--tinta);color:#fff;
+    padding:11px 18px;border-radius:999px;font-size:13px;font-weight:600;opacity:0;
+    transition:.25s;pointer-events:none;z-index:50;white-space:nowrap;max-width:92vw;
+    overflow:hidden;text-overflow:ellipsis}
+  #toast.mostra{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .carregando{text-align:center;padding:60px 0;color:var(--cinza);font-weight:600;font-size:14px}
+  .riscado{text-decoration:line-through;color:var(--cinza-claro)}
+  .check{width:26px;height:26px;border-radius:999px;border:2px solid var(--cinza-claro);
+    background:none;font-size:14px;color:#fff;flex-shrink:0}
+  .check.feito{background:var(--verde);border-color:var(--verde)}
+  .add-linha{display:flex;gap:8px;margin-bottom:10px}
+  .add-linha input{margin-top:0;flex:1}
+  .add-linha .btn-pill{border-radius:12px;font-size:18px;padding:0 16px}
+  .total-card{background:var(--tinta);color:#fff;border:none}
+  .total-card p{font-size:12px;color:#B8ADA7;font-weight:600}
+  .total-card b{display:block;font-size:24px;font-weight:800;color:#FFB264;margin-top:2px}
+  .total-card small{font-size:12px;color:#B8ADA7}
+  .analise{background:var(--lar-claro);border:1px solid var(--lar-borda);border-radius:18px;
+    padding:16px;font-size:14px;line-height:1.5}
+  .pago-lista .card{opacity:.65;background:#F5F0EC}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap marca">
+    <div class="logo">🍗</div>
+    <div>
+      <h1>Chicken Point</h1>
+      <small>Gestão</small>
+    </div>
+    <span id="sync"></span>
+    <button class="sino" id="sino" onclick="irPara('inicio')" style="display:none">🔔<b id="sino-n"></b></button>
+  </div>
+</header>
+
+<main><div class="wrap" id="main"><div class="carregando">🍗 Carregando seus dados...</div></div></main>
+
+<nav><div class="nav-in" id="nav"></div></nav>
+<div id="toast"></div>
+
+<script>
+/* ============ CONFIGURAÇÃO DO BANCO (Supabase) ============ */
+const SB_URL = "https://goueultbbufbzvcbfftr.supabase.co/rest/v1/dados";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvdWV1bHRiYnVmYnp2Y2JmZnRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2OTgzMDMsImV4cCI6MjA5OTI3NDMwM30.BT_tw5xLAE_vEZCVU37qwkKFneQdFOcKgU-4oMJb2P0";
+const CAB = { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY };
+
+/* ============ ESTADO ============ */
+let S = { estoque: [], compras: [], boletos: [], vendas: [], insta: [] };
+let tab = "inicio", subTab = "vendas";
+let formEstoque = false, formBoleto = false, editId = null;
+let pronto = false, salvandoTimer = null;
+
+const CATS = ["Frango", "Porção", "Lanche", "Molhos", "Embalagens", "Bebidas", "Mercado", "Outros"];
+const CAT_EMOJI = { Frango:"🍗", "Porção":"🍟", Lanche:"🍔", Molhos:"🥫", Embalagens:"📦", Bebidas:"🥤", Mercado:"🛒", Outros:"📋" };
+const MAPA_NUM = { "1":"Frango", "2":"Porção", "3":"Lanche", "4":"Molhos", "5":"Embalagens" };
+
+/* ============ HELPERS ============ */
+const uid = () => Math.random().toString(36).slice(2, 10);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const fmtR = (v) => (Number(v) || 0).toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+
+function hojeStr() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+function diasAte(s) {
+  if (!s) return 999;
+  const [y,m,d] = s.split("-").map(Number);
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  return Math.round((new Date(y, m-1, d) - hoje) / 86400000);
+}
+function fmtData(s) {
+  if (!s) return "-";
+  const [y,m,d] = s.split("-");
+  return d + "/" + m + "/" + y.slice(2);
+}
+const mesAtual = (s) => s && s.slice(0,7) === hojeStr().slice(0,7);
+function proximoMes(s) {
+  const [y,m,d] = s.split("-").map(Number);
+  const nm = m === 12 ? 1 : m + 1, ny = m === 12 ? y + 1 : y;
+  const ult = new Date(ny, nm, 0).getDate();
+  return ny + "-" + String(nm).padStart(2,"0") + "-" + String(Math.min(d, ult)).padStart(2,"0");
+}
+function migrar(d) {
+  return { ...d, estoque: (d.estoque || []).map(it => {
+    const m = String(it.nome || "").match(/^\s*([1-5])\s*[-–.):]?\s*(.+)$/);
+    if (m) return { ...it, categoria: MAPA_NUM[m[1]], nome: m[2].trim() };
+    if (!CATS.includes(it.categoria)) return { ...it, categoria: "Outros" };
+    return it;
+  })};
+}
+
+/* ============ BANCO ============ */
+async function carregar(silencioso) {
+  try {
+    const r = await fetch(SB_URL + "?id=eq.1&select=conteudo", { headers: CAB });
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    S = migrar(Object.assign({ estoque:[], compras:[], boletos:[], vendas:[], insta:[] }, (j[0] && j[0].conteudo) || {}));
+    pronto = true;
+    render();
+    marca("✓ sincronizado");
+  } catch (e) {
+    if (!silencioso) toast("Sem conexão com o banco — verifique a internet");
+    marca("");
+  }
+}
+function mudou() {
+  render();
+  marca("salvando...");
+  clearTimeout(salvandoTimer);
+  salvandoTimer = setTimeout(salvar, 700);
+}
+async function salvar() {
+  salvandoTimer = null;
+  try {
+    const r = await fetch(SB_URL + "?id=eq.1", {
+      method: "PATCH",
+      headers: { ...CAB, "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify({ conteudo: S }),
+    });
+    if (!r.ok) throw new Error(r.status);
+    marca("✓ salvo");
+  } catch (e) {
+    marca("");
+    toast("⚠️ Falha ao salvar — verifique a internet");
+  }
+}
+function marca(t) { document.getElementById("sync").textContent = t; }
+
+// Sincroniza quando volta pro app / a cada 60s (se não estiver editando)
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && pronto && !formEstoque && !formBoleto && !salvandoTimer) carregar(true);
+});
+setInterval(() => {
+  if (document.visibilityState === "visible" && pronto && !formEstoque && !formBoleto && !salvandoTimer) carregar(true);
+}, 60000);
+
+/* ============ ALERTAS ============ */
+function calcAlertas() {
+  const a = [];
+  S.boletos.filter(b => !b.pago).forEach(b => {
+    const d = diasAte(b.vencimento);
+    if (d < 0) a.push({ cls:"verm", t:`💰 ${esc(b.descricao)} VENCEU há ${Math.abs(d)} dia(s) — ${fmtR(b.valor)}` });
+    else if (d === 0) a.push({ cls:"verm", t:`💰 ${esc(b.descricao)} vence HOJE — ${fmtR(b.valor)}` });
+    else if (d === 1) a.push({ cls:"lar", t:`💰 ${esc(b.descricao)} vence AMANHÃ — ${fmtR(b.valor)}` });
+    else if (d <= 3) a.push({ cls:"amar", t:`💰 ${esc(b.descricao)} vence em ${d} dias — ${fmtR(b.valor)}` });
+  });
+  const zer = S.estoque.filter(i => Number(i.qtd) <= 0).length;
+  const bax = S.estoque.filter(i => Number(i.qtd) > 0 && Number(i.qtd) <= Number(i.minimo)).length;
+  const tot = zer + bax;
+  if (tot > 0) a.push({ cls: zer > 0 ? "verm" : "lar",
+    t:`🛒 ${tot} ${tot === 1 ? "item precisa" : "itens precisam"} de compra${zer > 0 ? ` (${zer} já zerou)` : ""} — veja a aba Compras` });
+  return a;
+}
+const itensComprar = () => S.estoque.filter(i => Number(i.qtd) <= Number(i.minimo)).length;
+
+/* ============ AÇÕES: ESTOQUE ============ */
+function abrirNovoItem() { editId = null; formEstoque = !formEstoque; render(); }
+function editarItem(id) {
+  editId = id; formEstoque = true; render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function salvarItem() {
+  const nome = document.getElementById("f-nome").value.trim();
+  if (!nome) { toast("Dá um nome pro item"); return; }
+  const item = {
+    nome,
+    categoria: document.getElementById("f-cat").value,
+    qtd: Number(document.getElementById("f-qtd").value) || 0,
+    unidade: document.getElementById("f-un").value.trim() || "un",
+    minimo: Number(document.getElementById("f-min").value) || 0,
+    custo: Number(document.getElementById("f-custo").value) || 0,
+  };
+  if (editId) S.estoque = S.estoque.map(i => i.id === editId ? { ...i, ...item } : i);
+  else S.estoque.push({ id: uid(), ...item });
+  editId = null; formEstoque = false;
+  mudou();
+}
+function qtd(id, delta) {
+  S.estoque = S.estoque.map(i => i.id === id ? { ...i, qtd: Math.max(0, Number(i.qtd) + delta) } : i);
+  mudou();
+}
+function removerItem(id) {
+  if (!confirm("Remover este item do estoque?")) return;
+  S.estoque = S.estoque.filter(i => i.id !== id);
+  mudou();
+}
+
+/* ============ AÇÕES: COMPRAS ============ */
+function addCompra() {
+  const el = document.getElementById("nova-compra");
+  const v = el.value.trim();
+  if (!v) return;
+  S.compras.push({ id: uid(), nome: v, done: false });
+  mudou();
+}
+function toggleCompra(id) {
+  S.compras = S.compras.map(c => c.id === id ? { ...c, done: !c.done } : c);
+  mudou();
+}
+function removerCompra(id) { S.compras = S.compras.filter(c => c.id !== id); mudou(); }
+function comprei(id) {
+  S.estoque = S.estoque.map(i => {
+    if (i.id !== id) return i;
+    const sug = Math.max(1, Number(i.minimo) * 2 - Number(i.qtd));
+    return { ...i, qtd: Number(i.qtd) + sug };
+  });
+  toast("Entrada no estoque feita ✓");
+  mudou();
+}
+
+/* ============ AÇÕES: FINANCEIRO ============ */
+function abrirNovoBoleto() { formBoleto = !formBoleto; render(); }
+function salvarBoleto() {
+  const desc = document.getElementById("b-desc").value.trim();
+  const valor = Number(document.getElementById("b-valor").value);
+  if (!desc || !valor) { toast("Preenche descrição e valor"); return; }
+  S.boletos.push({
+    id: uid(), descricao: desc,
+    fornecedor: document.getElementById("b-forn").value.trim(),
+    valor,
+    vencimento: document.getElementById("b-venc").value || hojeStr(),
+    recorrente: document.getElementById("b-rec").checked,
+    pago: false,
+  });
+  formBoleto = false;
+  mudou();
+}
+function pagar(id) {
+  const alvo = S.boletos.find(b => b.id === id);
+  if (!alvo) return;
+  S.boletos = S.boletos.map(b => b.id === id ? { ...b, pago: !b.pago } : b);
+  if (!alvo.pago && alvo.recorrente) {
+    const prox = proximoMes(alvo.vencimento);
+    if (!S.boletos.some(b => b.descricao === alvo.descricao && b.vencimento === prox)) {
+      S.boletos.push({ ...alvo, id: uid(), vencimento: prox, pago: false });
+      toast("Boleto do mês seguinte criado 🔁");
+    }
+  }
+  mudou();
+}
+function removerBoleto(id) {
+  if (!confirm("Remover esta conta?")) return;
+  S.boletos = S.boletos.filter(b => b.id !== id);
+  mudou();
+}
+
+/* ============ AÇÕES: RELATÓRIOS ============ */
+function salvarVenda() {
+  const fat = Number(document.getElementById("v-fat").value);
+  if (!fat) { toast("Informa o faturamento"); return; }
+  S.vendas.push({
+    id: uid(),
+    data: document.getElementById("v-data").value || hojeStr(),
+    faturamento: fat,
+    pedidos: Number(document.getElementById("v-ped").value) || 0,
+  });
+  mudou();
+}
+function removerVenda(id) { S.vendas = S.vendas.filter(v => v.id !== id); mudou(); }
+function salvarPost() {
+  const desc = document.getElementById("i-desc").value.trim();
+  if (!desc) { toast("Descreve o post"); return; }
+  S.insta.push({
+    id: uid(), descricao: desc,
+    data: document.getElementById("i-data").value || hojeStr(),
+    alcance: Number(document.getElementById("i-alc").value) || 0,
+    curtidas: Number(document.getElementById("i-cur").value) || 0,
+    comentarios: Number(document.getElementById("i-com").value) || 0,
+  });
+  mudou();
+}
+function removerPost(id) { S.insta = S.insta.filter(p => p.id !== id); mudou(); }
+
+function copiarResumo() {
+  const resumo =
+`Sou dono da Chicken Point, loja de frango frito na Baixada Santista. Analise os dados reais do meu negócio abaixo e me dê: 1) situação geral, 2) alertas urgentes, 3) o que está indo bem, 4) 3 ações práticas para esta semana, 5) dica de Instagram baseada nos meus posts.
+
+ESTOQUE: ${JSON.stringify(S.estoque.map(i => ({ nome:i.nome, categoria:i.categoria, qtd:i.qtd, minimo:i.minimo, unidade:i.unidade, custo:i.custo })))}
+
+CONTAS EM ABERTO: ${JSON.stringify(S.boletos.filter(b => !b.pago).map(b => ({ descricao:b.descricao, valor:b.valor, vencimento:b.vencimento })))}
+
+VENDAS DIÁRIAS: ${JSON.stringify(S.vendas.map(v => ({ data:v.data, faturamento:v.faturamento, pedidos:v.pedidos })))}
+
+POSTS INSTAGRAM: ${JSON.stringify(S.insta.map(p => ({ data:p.data, descricao:p.descricao, alcance:p.alcance, curtidas:p.curtidas, comentarios:p.comentarios })))}`;
+  navigator.clipboard.writeText(resumo)
+    .then(() => toast("Copiado! Cola no Claude pra eu analisar 🤖"))
+    .catch(() => toast("Não consegui copiar — tenta de novo"));
+}
+
+/* ============ NAVEGAÇÃO ============ */
+function irPara(t) { tab = t; formEstoque = false; formBoleto = false; editId = null; render(); window.scrollTo(0, 0); }
+function irSub(s) { subTab = s; render(); }
+let toastTimer = null;
+function toast(t) {
+  const el = document.getElementById("toast");
+  el.textContent = t;
+  el.classList.add("mostra");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("mostra"), 2600);
+}
+
+/* ============ VIEWS ============ */
+function vInicio() {
+  const alertas = calcAlertas();
+  const vm = S.vendas.filter(v => mesAtual(v.data));
+  const fat = vm.reduce((s,v) => s + Number(v.faturamento || 0), 0);
+  const ped = vm.reduce((s,v) => s + Number(v.pedidos || 0), 0);
+  const pagar = S.boletos.filter(b => !b.pago && mesAtual(b.vencimento)).reduce((s,b) => s + Number(b.valor || 0), 0);
+  return `
+    <div class="topo"><h2>🔔 Central de Alertas</h2></div>
+    ${alertas.length === 0
+      ? `<div class="card ok">✅ Tudo em dia! Nenhum boleto vencendo e estoque OK.</div>`
+      : alertas.map(a => `<div class="card alerta-${a.cls}"><div class="alerta-txt">${a.t}</div></div>`).join("")}
+    <div class="secao">Resumo do mês</div>
+    <div class="grade2">
+      <div class="kpi destaque"><p>Faturamento</p><b>${fmtR(fat)}</b></div>
+      <div class="kpi"><p>Pedidos</p><b>${ped}</b></div>
+      <div class="kpi"><p>A pagar no mês</p><b class="verm">${fmtR(pagar)}</b></div>
+      <div class="kpi"><p>Itens p/ comprar</p><b class="lar">${itensComprar()}</b></div>
+    </div>`;
+}
+
+function vEstoque() {
+  const ed = editId ? S.estoque.find(i => i.id === editId) : null;
+  const v = ed || { nome:"", categoria:"Frango", qtd:"", unidade:"un", minimo:"", custo:"" };
+  let html = `
+    <div class="topo">
+      <h2>Estoque</h2>
+      <button class="btn btn-pill" onclick="abrirNovoItem()">${formEstoque ? "✕ Fechar" : "+ Novo item"}</button>
+    </div>`;
+  if (formEstoque) html += `
+    <div class="form">
+      <div class="titulo">${ed ? "✏️ Editando item" : "Novo item"}</div>
+      <label><span>Nome do item</span><input id="f-nome" value="${esc(v.nome)}" placeholder="Ex: Coxa e sobrecoxa"></label>
+      <label><span>Categoria</span><select id="f-cat">
+        ${CATS.map(c => `<option value="${c}" ${c === v.categoria ? "selected" : ""}>${CAT_EMOJI[c]} ${c}</option>`).join("")}
+      </select></label>
+      <div class="grade2">
+        <label><span>Quantidade atual</span><input id="f-qtd" type="number" inputmode="decimal" value="${esc(v.qtd)}" placeholder="0"></label>
+        <label><span>Unidade</span><input id="f-un" value="${esc(v.unidade)}" placeholder="kg, un, L..."></label>
+        <label><span>Estoque mínimo</span><input id="f-min" type="number" inputmode="decimal" value="${esc(v.minimo)}" placeholder="Ex: 5"></label>
+        <label><span>Custo unitário (R$)</span><input id="f-custo" type="number" inputmode="decimal" value="${esc(v.custo)}" placeholder="0,00"></label>
+      </div>
+      <button class="btn btn-cheio" onclick="salvarItem()">${ed ? "Salvar alterações" : "Salvar item"}</button>
+    </div>`;
+  if (S.estoque.length === 0 && !formEstoque) {
+    html += `<div class="vazio"><div class="icone">📦</div><b>Estoque vazio</b><p>Toque em "+ Novo item" e cadastre frango, porções, molhos, embalagens...</p></div>`;
+    return html;
+  }
+  CATS.forEach(cat => {
+    const itens = S.estoque
+      .filter(i => (CATS.includes(i.categoria) ? i.categoria : "Outros") === cat)
+      .sort((a,b) => {
+        const pa = Number(a.qtd) <= Number(a.minimo) ? 0 : 1;
+        const pb = Number(b.qtd) <= Number(b.minimo) ? 0 : 1;
+        return pa - pb || a.nome.localeCompare(b.nome);
+      });
+    if (!itens.length) return;
+    html += `<div class="secao">${CAT_EMOJI[cat]} ${cat} <span class="cont">${itens.length}</span></div>`;
+    itens.forEach(it => {
+      const acabou = Number(it.qtd) <= 0;
+      const baixo = !acabou && Number(it.qtd) <= Number(it.minimo);
+      html += `
+      <div class="card ${acabou ? "alerta-verm" : baixo ? "alerta-lar" : ""}">
+        <div class="linha">
+          <div class="cresce" onclick="editarItem('${it.id}')">
+            <div class="nome">${esc(it.nome)} <span style="opacity:.35;font-size:11px">✏️</span></div>
+            <div class="sub">mín: ${esc(it.minimo)} ${esc(it.unidade)} · custo ${fmtR(it.custo)}
+              ${acabou ? '<b style="color:var(--verm)"> · ACABOU</b>' : ""}
+              ${baixo ? '<b style="color:var(--lar-esc)"> · BAIXO</b>' : ""}</div>
+          </div>
+          <button class="qtd-btn" onclick="qtd('${it.id}',-1)">−</button>
+          <span class="qtd-num">${esc(it.qtd)}</span>
+          <button class="qtd-btn mais" onclick="qtd('${it.id}',1)">+</button>
+          <button class="btn btn-fantasma" onclick="removerItem('${it.id}')">🗑</button>
+        </div>
+      </div>`;
+    });
+  });
+  return html;
+}
+
+function vCompras() {
+  const auto = S.estoque
+    .filter(i => Number(i.qtd) <= Number(i.minimo))
+    .map(i => ({ ...i, sug: Math.max(1, Number(i.minimo) * 2 - Number(i.qtd)) }));
+  let html = `<div class="topo"><h2>Lista de Compras</h2></div>
+    <div class="secao" style="color:var(--lar-esc)">🔄 Gerada automática do estoque</div>`;
+  if (!auto.length) html += `<div class="card ok">✅ Nada pra repor — estoque acima do mínimo.</div>`;
+  auto.forEach(it => {
+    html += `
+    <div class="card" style="border-color:var(--lar-borda)">
+      <div class="linha">
+        <div class="cresce">
+          <div class="nome">${CAT_EMOJI[it.categoria] || ""} ${esc(it.nome)}</div>
+          <div class="sub">tem ${esc(it.qtd)} ${esc(it.unidade)} · comprar <b style="color:var(--lar-esc)">${it.sug} ${esc(it.unidade)}</b></div>
+        </div>
+        <button class="btn btn-mini" onclick="comprei('${it.id}')">Comprei ✓</button>
+      </div>
+    </div>`;
+  });
+  html += `<div class="secao">Outros itens</div>
+    <div class="add-linha">
+      <input id="nova-compra" placeholder="Ex: guardanapo, detergente..." onkeydown="if(event.key==='Enter')addCompra()">
+      <button class="btn btn-pill" onclick="addCompra()">+</button>
+    </div>`;
+  S.compras.forEach(c => {
+    html += `
+    <div class="card"><div class="linha">
+      <button class="check ${c.done ? "feito" : ""}" onclick="toggleCompra('${c.id}')">${c.done ? "✓" : ""}</button>
+      <div class="cresce nome ${c.done ? "riscado" : ""}">${esc(c.nome)}</div>
+      <button class="btn btn-fantasma" onclick="removerCompra('${c.id}')">🗑</button>
+    </div></div>`;
+  });
+  return html;
+}
+
+function vContas() {
+  const abertos = S.boletos.filter(b => !b.pago).sort((a,b) => a.vencimento.localeCompare(b.vencimento));
+  const pagos = S.boletos.filter(b => b.pago).sort((a,b) => b.vencimento.localeCompare(a.vencimento));
+  const total = abertos.reduce((s,b) => s + Number(b.valor), 0);
+  let html = `
+    <div class="topo">
+      <h2>Financeiro</h2>
+      <button class="btn btn-pill" onclick="abrirNovoBoleto()">${formBoleto ? "✕ Fechar" : "+ Novo boleto"}</button>
+    </div>
+    <div class="card total-card">
+      <p>Total em aberto</p><b>${fmtR(total)}</b>
+      <small>${abertos.length} conta(s) a pagar</small>
+    </div>`;
+  if (formBoleto) html += `
+    <div class="form">
+      <div class="titulo">Novo boleto</div>
+      <label><span>Descrição</span><input id="b-desc" placeholder="Ex: Boleto frango"></label>
+      <label><span>Fornecedor</span><input id="b-forn" placeholder="Ex: Distribuidora XYZ"></label>
+      <div class="grade2">
+        <label><span>Valor (R$)</span><input id="b-valor" type="number" inputmode="decimal" placeholder="0,00"></label>
+        <label><span>Vencimento</span><input id="b-venc" type="date" value="${hojeStr()}"></label>
+      </div>
+      <label class="chk"><input id="b-rec" type="checkbox">
+        <span><b>🔁 Repete todo mês</b><small>Aluguel, luz, internet, fornecedor fixo... Quando pagar, o do mês seguinte é criado sozinho.</small></span>
+      </label>
+      <button class="btn btn-cheio" onclick="salvarBoleto()">Salvar boleto</button>
+    </div>`;
+  if (!abertos.length && !pagos.length && !formBoleto)
+    html += `<div class="vazio"><div class="icone">💰</div><b>Nenhuma conta cadastrada</b><p>Cadastre seus boletos e o app te avisa quando estiverem perto de vencer.</p></div>`;
+  abertos.forEach(b => {
+    const d = diasAte(b.vencimento);
+    let tag;
+    if (d < 0) tag = `<span class="tag verm">Venceu há ${Math.abs(d)}d</span>`;
+    else if (d === 0) tag = `<span class="tag verm">Vence HOJE</span>`;
+    else if (d === 1) tag = `<span class="tag lar">Amanhã</span>`;
+    else if (d <= 7) tag = `<span class="tag amar">Em ${d} dias</span>`;
+    else tag = `<span class="tag neutro">${fmtData(b.vencimento)}</span>`;
+    html += `
+    <div class="card"><div class="linha">
+      <button class="check" onclick="pagar('${b.id}')" title="Marcar como pago"></button>
+      <div class="cresce">
+        <div class="nome">${esc(b.descricao)} ${b.recorrente ? "🔁" : ""}</div>
+        <div class="sub">${esc(b.fornecedor) || "—"}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:14px;font-weight:800">${fmtR(b.valor)}</div>${tag}
+      </div>
+      <button class="btn btn-fantasma" onclick="removerBoleto('${b.id}')">🗑</button>
+    </div></div>`;
+  });
+  if (pagos.length) {
+    html += `<div class="secao">Pagos</div><div class="pago-lista">`;
+    pagos.forEach(b => {
+      html += `
+      <div class="card"><div class="linha">
+        <button class="check feito" onclick="pagar('${b.id}')">✓</button>
+        <div class="cresce nome riscado">${esc(b.descricao)}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--cinza)">${fmtR(b.valor)}</div>
+        <button class="btn btn-fantasma" onclick="removerBoleto('${b.id}')">🗑</button>
+      </div></div>`;
+    });
+    html += `</div>`;
+  }
+  return html;
+}
+
+function vRelatorios() {
+  let html = `
+    <div class="topo"><h2>Relatórios</h2></div>
+    <div class="subabas">
+      <button class="${subTab==="vendas"?"ativo":""}" onclick="irSub('vendas')">📊 Vendas</button>
+      <button class="${subTab==="insta"?"ativo":""}" onclick="irSub('insta')">📱 Instagram</button>
+      <button class="${subTab==="ia"?"ativo":""}" onclick="irSub('ia')">🤖 Análise</button>
+    </div>`;
+
+  if (subTab === "vendas") {
+    const vm = S.vendas.filter(v => mesAtual(v.data));
+    const fat = vm.reduce((s,v) => s + Number(v.faturamento), 0);
+    const ped = vm.reduce((s,v) => s + Number(v.pedidos), 0);
+    const ordenadas = [...S.vendas].sort((a,b) => a.data.localeCompare(b.data));
+    const ult = ordenadas.slice(-7);
+    const max = Math.max(1, ...ult.map(v => Number(v.faturamento)));
+    html += `
+    <div class="grade2" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="kpi"><p>Mês</p><b style="font-size:14px">${fmtR(fat)}</b></div>
+      <div class="kpi"><p>Pedidos</p><b style="font-size:14px">${ped}</b></div>
+      <div class="kpi"><p>Ticket</p><b style="font-size:14px" class="lar">${fmtR(ped > 0 ? fat/ped : 0)}</b></div>
+    </div>`;
+    if (ult.length) {
+      html += `<div class="card" style="margin-top:10px"><div class="secao" style="margin-top:0">Últimos dias</div><div class="grafico">`;
+      ult.forEach(v => {
+        html += `<div class="col"><div class="barra" style="height:${Math.max(8, Number(v.faturamento)/max*100)}%"></div><small>${v.data.slice(8,10)}/${v.data.slice(5,7)}</small></div>`;
+      });
+      html += `</div></div>`;
+    }
+    html += `
+    <div class="form" style="margin-top:10px">
+      <div class="titulo">Registrar venda do dia</div>
+      <label><span>Data</span><input id="v-data" type="date" value="${hojeStr()}"></label>
+      <div class="grade2">
+        <label><span>Faturamento (R$)</span><input id="v-fat" type="number" inputmode="decimal" placeholder="0,00"></label>
+        <label><span>Nº de pedidos</span><input id="v-ped" type="number" inputmode="numeric" placeholder="0"></label>
+      </div>
+      <button class="btn btn-cheio" onclick="salvarVenda()">Salvar dia</button>
+    </div>`;
+    [...ordenadas].reverse().forEach(v => {
+      html += `<div class="card"><div class="linha">
+        <div class="sub" style="min-width:56px">${fmtData(v.data)}</div>
+        <div class="cresce nome">${fmtR(v.faturamento)}</div>
+        <div class="sub">${esc(v.pedidos)} ped.</div>
+        <button class="btn btn-fantasma" onclick="removerVenda('${v.id}')">🗑</button>
+      </div></div>`;
+    });
+  }
+
+  if (subTab === "insta") {
+    html += `
+    <div class="form">
+      <div class="titulo">📱 Registrar post</div>
+      <p style="font-size:12px;color:var(--cinza);margin-bottom:10px">Copie os números do Instagram Insights e cole aqui.</p>
+      <label><span>Descrição do post</span><input id="i-desc" placeholder="Ex: Vídeo balde de frango + promoção"></label>
+      <label><span>Data</span><input id="i-data" type="date" value="${hojeStr()}"></label>
+      <div class="grade2" style="grid-template-columns:1fr 1fr 1fr">
+        <label><span>Alcance</span><input id="i-alc" type="number" inputmode="numeric" placeholder="0"></label>
+        <label><span>Curtidas</span><input id="i-cur" type="number" inputmode="numeric" placeholder="0"></label>
+        <label><span>Coment.</span><input id="i-com" type="number" inputmode="numeric" placeholder="0"></label>
+      </div>
+      <button class="btn btn-cheio" onclick="salvarPost()">Salvar post</button>
+    </div>`;
+    if (!S.insta.length)
+      html += `<div class="vazio"><div class="icone">📱</div><b>Nenhum post registrado</b><p>Registre seus posts pra ver o que dá mais resultado.</p></div>`;
+    [...S.insta].sort((a,b) => b.data.localeCompare(a.data)).forEach(p => {
+      const eng = p.alcance > 0 ? (((Number(p.curtidas) + Number(p.comentarios)) / p.alcance) * 100).toFixed(1) : "0";
+      html += `
+      <div class="card">
+        <div class="linha">
+          <div class="cresce"><div class="nome">${esc(p.descricao)}</div><div class="sub">${fmtData(p.data)}</div></div>
+          <button class="btn btn-fantasma" onclick="removerPost('${p.id}')">🗑</button>
+        </div>
+        <div class="linha" style="margin-top:8px;font-size:12px;color:var(--cinza)">
+          <span>👁 <b>${esc(p.alcance)}</b></span><span>❤️ <b>${esc(p.curtidas)}</b></span>
+          <span>💬 <b>${esc(p.comentarios)}</b></span>
+          <span class="tag lar" style="margin-left:auto">${eng}% eng.</span>
+        </div>
+      </div>`;
+    });
+  }
+
+  if (subTab === "ia") {
+    html += `
+    <div class="analise">
+      <b style="font-size:15px">🤖 Análise do negócio com o Claude</b>
+      <p style="margin-top:6px;color:#7C4A28">Toca no botão abaixo pra copiar todos os seus dados (estoque, contas, vendas, Instagram) já formatados. Depois é só colar numa conversa no Claude que ele te devolve a análise completa com ações práticas.</p>
+      <button class="btn btn-cheio" style="margin-top:12px" onclick="copiarResumo()">📋 Copiar resumo pra análise</button>
+    </div>`;
+  }
+  return html;
+}
+
+/* ============ RENDER ============ */
+const ABAS = [
+  { id:"inicio", ico:"🏠", rot:"Início" },
+  { id:"estoque", ico:"📦", rot:"Estoque" },
+  { id:"compras", ico:"🛒", rot:"Compras" },
+  { id:"contas", ico:"💰", rot:"Contas" },
+  { id:"relatorios", ico:"📊", rot:"Relatórios" },
+];
+function render() {
+  if (!pronto) return;
+  const views = { inicio:vInicio, estoque:vEstoque, compras:vCompras, contas:vContas, relatorios:vRelatorios };
+  document.getElementById("main").innerHTML = views[tab]();
+  const n = itensComprar();
+  document.getElementById("nav").innerHTML = ABAS.map(a => `
+    <button class="${tab === a.id ? "ativo" : ""}" onclick="irPara('${a.id}')">
+      <span class="ico">${a.ico}${a.id === "compras" && n > 0 ? `<span class="badge">${n}</span>` : ""}</span>
+      <span class="rotulo">${a.rot}</span>
+    </button>`).join("");
+  const alertas = calcAlertas().length;
+  const sino = document.getElementById("sino");
+  sino.style.display = alertas > 0 ? "" : "none";
+  document.getElementById("sino-n").textContent = alertas;
+}
+
+carregar();
+</script>
+</body>
+</html>

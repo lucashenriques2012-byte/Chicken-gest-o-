@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Chicken Point">
 <title>Chicken Point · Gestão</title>
+<link rel="apple-touch-icon" href="logo.PNG">
+<link rel="icon" href="logo.PNG">
 <style>
   :root{
     --lar:#F97316; --lar-esc:#EA580C; --lar-claro:#FFF3E8; --lar-borda:#FDD9B8;
@@ -34,7 +36,7 @@
   .marca{display:flex;align-items:center;gap:12px}
   .logo{width:42px;height:42px;border-radius:14px;background:var(--lar);
     display:flex;align-items:center;justify-content:center;font-size:22px;
-    box-shadow:0 4px 10px rgba(249,115,22,.35)}
+    box-shadow:0 4px 10px rgba(249,115,22,.35);overflow:hidden}
   .marca h1{font-size:17px;font-weight:800;letter-spacing:-.3px;line-height:1.1}
   .marca small{font-size:12px;font-weight:700;color:var(--lar)}
   .sino{position:relative;margin-left:auto;background:var(--lar-claro);border:none;
@@ -50,6 +52,12 @@
     color:var(--cinza);margin:20px 0 8px;display:flex;align-items:center;gap:6px}
   .secao .cont{background:#F1EAE5;color:var(--cinza);border-radius:999px;
     padding:1px 8px;font-size:11px}
+  .secao-btn{width:100%;background:var(--branco);border:1px solid var(--borda);
+    border-radius:14px;padding:12px;cursor:pointer;font-family:inherit;
+    font-size:12px;text-transform:none;letter-spacing:0;margin:14px 0 8px}
+  .secao-btn .seta{font-size:11px;color:var(--cinza-claro);width:14px}
+  .secao-btn .cat-nome{font-weight:800;font-size:13px;color:var(--tinta)}
+  .secao-btn .tag{margin-left:auto}
   .topo{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 
   /* Cards e listas */
@@ -174,7 +182,7 @@
 
 <header>
   <div class="wrap marca">
-    <div class="logo">🍗</div>
+    <div class="logo"><img src="logo.PNG" alt="Chicken Point" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.textContent='🍗'"></div>
     <div>
       <h1>Chicken Point</h1>
       <small>Gestão</small>
@@ -204,6 +212,15 @@ let pronto = false, salvandoTimer = null;
 const CATS = ["Frango", "Porção", "Lanche", "Molhos", "Embalagens", "Bebidas", "Mercado", "Outros"];
 const CAT_EMOJI = { Frango:"🍗", "Porção":"🍟", Lanche:"🍔", Molhos:"🥫", Embalagens:"📦", Bebidas:"🥤", Mercado:"🛒", Outros:"📋" };
 const MAPA_NUM = { "1":"Frango", "2":"Porção", "3":"Lanche", "4":"Molhos", "5":"Embalagens" };
+
+/* Categorias minimizadas (lembradas neste aparelho) */
+let catFechadas = {};
+try { catFechadas = JSON.parse(localStorage.getItem("cp_cats") || "{}"); } catch (e) {}
+function toggleCat(chave) {
+  catFechadas[chave] = !catFechadas[chave];
+  try { localStorage.setItem("cp_cats", JSON.stringify(catFechadas)); } catch (e) {}
+  render();
+}
 
 /* ============ HELPERS ============ */
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -295,7 +312,7 @@ function calcAlertas() {
     if (d < 0) a.push({ cls:"verm", t:`💰 ${esc(b.descricao)} VENCEU há ${Math.abs(d)} dia(s) — ${fmtR(b.valor)}` });
     else if (d === 0) a.push({ cls:"verm", t:`💰 ${esc(b.descricao)} vence HOJE — ${fmtR(b.valor)}` });
     else if (d === 1) a.push({ cls:"lar", t:`💰 ${esc(b.descricao)} vence AMANHÃ — ${fmtR(b.valor)}` });
-    else if (d <= 3) a.push({ cls:"amar", t:`💰 ${esc(b.descricao)} vence em ${d} dias — ${fmtR(b.valor)}` });
+    else if (d <= 5) a.push({ cls:"amar", t:`💰 ${esc(b.descricao)} vence em ${d} dias — ${fmtR(b.valor)}` });
   });
   const zer = S.estoque.filter(i => Number(i.qtd) <= 0).length;
   const bax = S.estoque.filter(i => Number(i.qtd) > 0 && Number(i.qtd) <= Number(i.minimo)).length;
@@ -509,7 +526,20 @@ function vEstoque() {
         return pa - pb || a.nome.localeCompare(b.nome);
       });
     if (!itens.length) return;
-    html += `<div class="secao">${CAT_EMOJI[cat]} ${cat} <span class="cont">${itens.length}</span></div>`;
+    const chave = "e:" + cat;
+    const fechada = !!catFechadas[chave];
+    const problemas = itens.filter(i => Number(i.qtd) <= Number(i.minimo)).length;
+    html += `
+    <button class="secao-btn" onclick="toggleCat('${chave}')">
+      <span class="linha">
+        <span class="seta">${fechada ? "▶" : "▼"}</span>
+        <span>${CAT_EMOJI[cat]}</span>
+        <span class="cat-nome">${cat}</span>
+        <span class="cont">${itens.length}</span>
+        ${fechada && problemas > 0 ? `<span class="tag lar">⚠️ ${problemas}</span>` : ""}
+      </span>
+    </button>`;
+    if (fechada) return;
     itens.forEach(it => {
       const acabou = Number(it.qtd) <= 0;
       const baixo = !acabou && Number(it.qtd) <= Number(it.minimo);
@@ -540,17 +570,33 @@ function vCompras() {
   let html = `<div class="topo"><h2>Lista de Compras</h2></div>
     <div class="secao" style="color:var(--lar-esc)">🔄 Gerada automática do estoque</div>`;
   if (!auto.length) html += `<div class="card ok">✅ Nada pra repor — estoque acima do mínimo.</div>`;
-  auto.forEach(it => {
+  CATS.forEach(cat => {
+    const itens = auto.filter(i => (CATS.includes(i.categoria) ? i.categoria : "Outros") === cat);
+    if (!itens.length) return;
+    const chave = "c:" + cat;
+    const fechada = !!catFechadas[chave];
     html += `
-    <div class="card" style="border-color:var(--lar-borda)">
-      <div class="linha">
-        <div class="cresce">
-          <div class="nome">${CAT_EMOJI[it.categoria] || ""} ${esc(it.nome)}</div>
-          <div class="sub">tem ${esc(it.qtd)} ${esc(it.unidade)} · comprar <b style="color:var(--lar-esc)">${it.sug} ${esc(it.unidade)}</b></div>
+    <button class="secao-btn" onclick="toggleCat('${chave}')">
+      <span class="linha">
+        <span class="seta">${fechada ? "▶" : "▼"}</span>
+        <span>${CAT_EMOJI[cat]}</span>
+        <span class="cat-nome">${cat}</span>
+        <span class="cont">${itens.length}</span>
+      </span>
+    </button>`;
+    if (fechada) return;
+    itens.forEach(it => {
+      html += `
+      <div class="card" style="border-color:var(--lar-borda)">
+        <div class="linha">
+          <div class="cresce">
+            <div class="nome">${esc(it.nome)}</div>
+            <div class="sub">tem ${esc(it.qtd)} ${esc(it.unidade)} · comprar <b style="color:var(--lar-esc)">${it.sug} ${esc(it.unidade)}</b></div>
+          </div>
+          <button class="btn btn-mini" onclick="comprei('${it.id}')">Comprei ✓</button>
         </div>
-        <button class="btn btn-mini" onclick="comprei('${it.id}')">Comprei ✓</button>
-      </div>
-    </div>`;
+      </div>`;
+    });
   });
   html += `<div class="secao">Outros itens</div>
     <div class="add-linha">

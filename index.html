@@ -176,6 +176,17 @@
   .analise{background:var(--lar-claro);border:1px solid var(--lar-borda);border-radius:18px;
     padding:16px;font-size:14px;line-height:1.5}
   .pago-lista .card{opacity:.65;background:#F5F0EC}
+
+  /* Login e perfis */
+  .btn-sair{margin-left:8px;background:none;border:1px solid var(--borda);border-radius:999px;
+    padding:8px 12px;font-size:11px;font-weight:800;color:var(--cinza);font-family:inherit;cursor:pointer}
+  .login{max-width:300px;margin:48px auto 0;text-align:center}
+  .login .logo{width:88px;height:88px;margin:0 auto 16px;font-size:42px;border-radius:24px}
+  .login h2{margin-bottom:4px}
+  .login p{font-size:13px;color:var(--cinza);margin-bottom:18px}
+  .login input{text-align:center;font-size:20px;letter-spacing:.3em;font-weight:800}
+  .login .btn-cheio{margin-top:6px}
+  .qtd-input{width:70px;margin-top:0;text-align:center;font-weight:800;padding:8px 4px;font-size:15px}
 </style>
 </head>
 <body>
@@ -189,6 +200,7 @@
     </div>
     <span id="sync"></span>
     <button class="sino" id="sino" onclick="irPara('inicio')" style="display:none">🔔<b id="sino-n"></b></button>
+    <button class="btn-sair" id="btn-sair" onclick="sair()" style="display:none">Sair</button>
   </div>
 </header>
 
@@ -203,15 +215,39 @@ const SB_URL = "https://goueultbbufbzvcbfftr.supabase.co/rest/v1/dados";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvdWV1bHRiYnVmYnp2Y2JmZnRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2OTgzMDMsImV4cCI6MjA5OTI3NDMwM30.BT_tw5xLAE_vEZCVU37qwkKFneQdFOcKgU-4oMJb2P0";
 const CAB = { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY };
 
+/* ============ ACESSO (troque as senhas abaixo antes de publicar!) ============ */
+const SENHA_ADMIN = "2502";        // ← SUA senha (acesso total)
+const SENHA_FUNCIONARIO = "1234";  // ← senha da FUNCIONÁRIA (só contagem de estoque)
+
+let perfil = null;
+try { perfil = localStorage.getItem("cp_perfil"); } catch (e) {}
+if (perfil !== "admin" && perfil !== "func") perfil = null;
+
+function entrar() {
+  const s = document.getElementById("senha").value.trim();
+  if (s === SENHA_ADMIN) perfil = "admin";
+  else if (s === SENHA_FUNCIONARIO) perfil = "func";
+  else { toast("Senha incorreta"); return; }
+  try { localStorage.setItem("cp_perfil", perfil); } catch (e) {}
+  tab = perfil === "func" ? "estoque" : "inicio";
+  render();
+}
+function sair() {
+  perfil = null;
+  try { localStorage.removeItem("cp_perfil"); } catch (e) {}
+  render();
+}
+
 /* ============ ESTADO ============ */
 let S = { estoque: [], compras: [], boletos: [], vendas: [], insta: [] };
 let tab = "inicio", subTab = "vendas";
 let formEstoque = false, formBoleto = false, editId = null;
 let pronto = false, salvandoTimer = null;
 
-const CATS = ["Frango", "Porção", "Lanche", "Molhos", "Embalagens", "Bebidas", "Mercado", "Outros"];
-const CAT_EMOJI = { Frango:"🍗", "Porção":"🍟", Lanche:"🍔", Molhos:"🥫", Embalagens:"📦", Bebidas:"🥤", Mercado:"🛒", Outros:"📋" };
-const MAPA_NUM = { "1":"Frango", "2":"Porção", "3":"Lanche", "4":"Molhos", "5":"Embalagens" };
+const CATS = ["Frango", "Porções", "Molhos", "Bebidas", "Mercado", "Embalagens", "Outros"];
+const CAT_EMOJI = { Frango:"🍗", "Porções":"🍟", Molhos:"🥫", Bebidas:"🥤", Mercado:"🛒", Embalagens:"📦", Outros:"📋" };
+const MAPA_NUM = { "1":"Frango", "2":"Porções", "4":"Molhos", "5":"Embalagens" };
+const CAT_RENOMEADAS = { "Porção":"Porções", "Lanche":"Outros" };
 
 /* Categorias minimizadas (lembradas neste aparelho) */
 let catFechadas = {};
@@ -251,10 +287,12 @@ function proximoMes(s) {
 }
 function migrar(d) {
   return { ...d, estoque: (d.estoque || []).map(it => {
+    const cat = CAT_RENOMEADAS[it.categoria] || it.categoria;
     const m = String(it.nome || "").match(/^\s*([1-5])\s*[-–.):]?\s*(.+)$/);
-    if (m) return { ...it, categoria: MAPA_NUM[m[1]], nome: m[2].trim() };
-    if (!CATS.includes(it.categoria)) return { ...it, categoria: "Outros" };
-    return it;
+    if (m && MAPA_NUM[m[1]]) return { ...it, categoria: MAPA_NUM[m[1]], nome: m[2].trim() };
+    if (m) return { ...it, categoria: CATS.includes(cat) ? cat : "Outros", nome: m[2].trim() };
+    if (!CATS.includes(cat)) return { ...it, categoria: "Outros" };
+    return { ...it, categoria: cat };
   })};
 }
 
@@ -296,12 +334,16 @@ async function salvar() {
 }
 function marca(t) { document.getElementById("sync").textContent = t; }
 
-// Sincroniza quando volta pro app / a cada 60s (se não estiver editando)
+// Sincroniza quando volta pro app / a cada 60s (pausa se algum campo estiver em uso — protege a contagem)
+function emUso() {
+  const el = document.activeElement;
+  return formEstoque || formBoleto || (el && (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA"));
+}
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && pronto && !formEstoque && !formBoleto && !salvandoTimer) carregar(true);
+  if (document.visibilityState === "visible" && pronto && !emUso() && !salvandoTimer) carregar(true);
 });
 setInterval(() => {
-  if (document.visibilityState === "visible" && pronto && !formEstoque && !formBoleto && !salvandoTimer) carregar(true);
+  if (document.visibilityState === "visible" && pronto && !emUso() && !salvandoTimer) carregar(true);
 }, 60000);
 
 /* ============ ALERTAS ============ */
@@ -347,6 +389,11 @@ function salvarItem() {
 }
 function qtd(id, delta) {
   S.estoque = S.estoque.map(i => i.id === id ? { ...i, qtd: Math.max(0, Number(i.qtd) + delta) } : i);
+  mudou();
+}
+function setQtd(id, valor) {
+  const v = Math.max(0, Number(valor) || 0);
+  S.estoque = S.estoque.map(i => i.id === id ? { ...i, qtd: v } : i);
   mudou();
 }
 function removerItem(id) {
@@ -415,18 +462,40 @@ function removerBoleto(id) {
 }
 
 /* ============ AÇÕES: RELATÓRIOS ============ */
+const CANAIS = [
+  { id: "proprio", nome: "Delivery Próprio", emoji: "🏠" },
+  { id: "ifood", nome: "iFood", emoji: "🛵" },
+  { id: "food99", nome: "99Food", emoji: "🟡" },
+  { id: "keeta", nome: "Keeta", emoji: "🟠" },
+];
 function salvarVenda() {
-  const fat = Number(document.getElementById("v-fat").value);
-  if (!fat) { toast("Informa o faturamento"); return; }
+  const canais = {};
+  let fat = 0;
+  CANAIS.forEach(c => {
+    const v = Number(document.getElementById("v-" + c.id).value) || 0;
+    canais[c.id] = v;
+    fat += v;
+  });
+  if (!fat) { toast("Informa a venda de pelo menos um canal"); return; }
   S.vendas.push({
     id: uid(),
     data: document.getElementById("v-data").value || hojeStr(),
     faturamento: fat,
+    canais,
     pedidos: Number(document.getElementById("v-ped").value) || 0,
   });
   mudou();
 }
 function removerVenda(id) { S.vendas = S.vendas.filter(v => v.id !== id); mudou(); }
+async function sincronizarAgora() {
+  toast("Sincronizando com o Cardápio Web...");
+  try {
+    const r = await fetch("/api/sync-vendas");
+    const j = await r.json();
+    if (j.ok) { toast("✓ " + (j.msg || "Vendas sincronizadas")); carregar(true); }
+    else toast("⚠️ " + (j.erro || "Falha na sincronização"));
+  } catch (e) { toast("⚠️ Não consegui falar com a integração"); }
+}
 function salvarPost() {
   const desc = document.getElementById("i-desc").value.trim();
   if (!desc) { toast("Descreve o post"); return; }
@@ -449,7 +518,7 @@ ESTOQUE: ${JSON.stringify(S.estoque.map(i => ({ nome:i.nome, categoria:i.categor
 
 CONTAS EM ABERTO: ${JSON.stringify(S.boletos.filter(b => !b.pago).map(b => ({ descricao:b.descricao, valor:b.valor, vencimento:b.vencimento })))}
 
-VENDAS DIÁRIAS: ${JSON.stringify(S.vendas.map(v => ({ data:v.data, faturamento:v.faturamento, pedidos:v.pedidos })))}
+VENDAS DIÁRIAS: ${JSON.stringify(S.vendas.map(v => ({ data:v.data, faturamento:v.faturamento, pedidos:v.pedidos, canais:v.canais || null })))}
 
 POSTS INSTAGRAM: ${JSON.stringify(S.insta.map(p => ({ data:p.data, descricao:p.descricao, alcance:p.alcance, curtidas:p.curtidas, comentarios:p.comentarios })))}`;
   navigator.clipboard.writeText(resumo)
@@ -495,10 +564,10 @@ function vEstoque() {
   const v = ed || { nome:"", categoria:"Frango", qtd:"", unidade:"un", minimo:"", custo:"" };
   let html = `
     <div class="topo">
-      <h2>Estoque</h2>
-      <button class="btn btn-pill" onclick="abrirNovoItem()">${formEstoque ? "✕ Fechar" : "+ Novo item"}</button>
+      <h2>Estoque${perfil === "func" ? ' <span class="tag neutro">modo contagem</span>' : ""}</h2>
+      ${perfil === "admin" ? `<button class="btn btn-pill" onclick="abrirNovoItem()">${formEstoque ? "✕ Fechar" : "+ Novo item"}</button>` : ""}
     </div>`;
-  if (formEstoque) html += `
+  if (formEstoque && perfil === "admin") html += `
     <div class="form">
       <div class="titulo">${ed ? "✏️ Editando item" : "Novo item"}</div>
       <label><span>Nome do item</span><input id="f-nome" value="${esc(v.nome)}" placeholder="Ex: Coxa e sobrecoxa"></label>
@@ -543,19 +612,22 @@ function vEstoque() {
     itens.forEach(it => {
       const acabou = Number(it.qtd) <= 0;
       const baixo = !acabou && Number(it.qtd) <= Number(it.minimo);
+      const adm = perfil === "admin";
       html += `
       <div class="card ${acabou ? "alerta-verm" : baixo ? "alerta-lar" : ""}">
         <div class="linha">
-          <div class="cresce" onclick="editarItem('${it.id}')">
-            <div class="nome">${esc(it.nome)} <span style="opacity:.35;font-size:11px">✏️</span></div>
-            <div class="sub">mín: ${esc(it.minimo)} ${esc(it.unidade)} · custo ${fmtR(it.custo)}
+          <div class="cresce" ${adm ? `onclick="editarItem('${it.id}')"` : ""}>
+            <div class="nome">${esc(it.nome)} ${adm ? '<span style="opacity:.35;font-size:11px">✏️</span>' : ""}</div>
+            <div class="sub">mín: ${esc(it.minimo)} ${esc(it.unidade)}${adm ? ` · custo ${fmtR(it.custo)}` : ""}
               ${acabou ? '<b style="color:var(--verm)"> · ACABOU</b>' : ""}
               ${baixo ? '<b style="color:var(--lar-esc)"> · BAIXO</b>' : ""}</div>
           </div>
           <button class="qtd-btn" onclick="qtd('${it.id}',-1)">−</button>
-          <span class="qtd-num">${esc(it.qtd)}</span>
+          ${adm
+            ? `<span class="qtd-num">${esc(it.qtd)}</span>`
+            : `<input class="qtd-input" type="number" inputmode="decimal" value="${esc(it.qtd)}" onchange="setQtd('${it.id}', this.value)">`}
           <button class="qtd-btn mais" onclick="qtd('${it.id}',1)">+</button>
-          <button class="btn btn-fantasma" onclick="removerItem('${it.id}')">🗑</button>
+          ${adm ? `<button class="btn btn-fantasma" onclick="removerItem('${it.id}')">🗑</button>` : ""}
         </div>
       </div>`;
     });
@@ -709,23 +781,59 @@ function vRelatorios() {
       });
       html += `</div></div>`;
     }
+    // Resumo do mês por canal de venda
+    const porCanal = CANAIS.map(c => ({
+      ...c,
+      total: vm.reduce((s,v) => s + Number((v.canais || {})[c.id] || 0), 0),
+    }));
+    const somaCanais = porCanal.reduce((s,c) => s + c.total, 0);
+    const semCanal = fat - somaCanais;
+    if (somaCanais > 0) {
+      html += `<div class="card" style="margin-top:10px"><div class="secao" style="margin-top:0">💡 Vendas do mês por canal</div>`;
+      [...porCanal].sort((a,b) => b.total - a.total).forEach(c => {
+        if (!c.total) return;
+        const pct = Math.round(c.total / somaCanais * 100);
+        html += `
+        <div style="margin-bottom:10px">
+          <div class="linha" style="margin-bottom:3px">
+            <span style="font-size:13px;font-weight:700">${c.emoji} ${c.nome}</span>
+            <span style="margin-left:auto;font-size:13px;font-weight:800">${fmtR(c.total)}</span>
+            <span class="tag lar">${pct}%</span>
+          </div>
+          <div style="background:#F1EAE5;border-radius:999px;height:8px;overflow:hidden">
+            <div style="background:var(--lar);height:100%;width:${pct}%;border-radius:999px"></div>
+          </div>
+        </div>`;
+      });
+      if (semCanal > 0) html += `<div class="sub">+ ${fmtR(semCanal)} de registros antigos sem divisão por canal</div>`;
+      html += `</div>`;
+    }
     html += `
+    <button class="btn btn-cheio" style="margin-top:10px;background:var(--tinta)" onclick="sincronizarAgora()">🔄 Puxar vendas do Cardápio Web agora</button>
     <div class="form" style="margin-top:10px">
-      <div class="titulo">Registrar venda do dia</div>
+      <div class="titulo">Registrar venda manualmente</div>
       <label><span>Data</span><input id="v-data" type="date" value="${hojeStr()}"></label>
       <div class="grade2">
-        <label><span>Faturamento (R$)</span><input id="v-fat" type="number" inputmode="decimal" placeholder="0,00"></label>
-        <label><span>Nº de pedidos</span><input id="v-ped" type="number" inputmode="numeric" placeholder="0"></label>
+        ${CANAIS.map(c => `<label><span>${c.emoji} ${c.nome} (R$)</span><input id="v-${c.id}" type="number" inputmode="decimal" placeholder="0,00"></label>`).join("")}
       </div>
+      <label><span>Nº total de pedidos</span><input id="v-ped" type="number" inputmode="numeric" placeholder="0"></label>
+      <p style="font-size:11px;color:var(--cinza);margin-bottom:10px">Canal sem venda no dia? Deixa vazio. Os valores estão no resumo diário do Cardápio Web e dos apps.</p>
       <button class="btn btn-cheio" onclick="salvarVenda()">Salvar dia</button>
     </div>`;
     [...ordenadas].reverse().forEach(v => {
-      html += `<div class="card"><div class="linha">
-        <div class="sub" style="min-width:56px">${fmtData(v.data)}</div>
-        <div class="cresce nome">${fmtR(v.faturamento)}</div>
-        <div class="sub">${esc(v.pedidos)} ped.</div>
-        <button class="btn btn-fantasma" onclick="removerVenda('${v.id}')">🗑</button>
-      </div></div>`;
+      const divisao = v.canais
+        ? CANAIS.filter(c => Number(v.canais[c.id]) > 0).map(c => `${c.emoji} ${fmtR(v.canais[c.id])}`).join(" · ")
+        : "";
+      html += `<div class="card">
+        <div class="linha">
+          <div class="sub" style="min-width:56px">${fmtData(v.data)}</div>
+          <div class="cresce nome">${fmtR(v.faturamento)}</div>
+          ${v.origem === "auto" ? '<span class="tag lar">🤖</span>' : ""}
+          <div class="sub">${esc(v.pedidos)} ped.</div>
+          <button class="btn btn-fantasma" onclick="removerVenda('${v.id}')">🗑</button>
+        </div>
+        ${divisao ? `<div class="sub" style="margin-top:4px">${divisao}</div>` : ""}
+      </div>`;
     });
   }
 
@@ -773,6 +881,17 @@ function vRelatorios() {
   return html;
 }
 
+function vLogin() {
+  return `
+  <div class="login">
+    <div class="logo"><img src="logo.PNG" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:24px" onerror="this.parentNode.textContent='🍗'"></div>
+    <h2>Chicken Point · Gestão</h2>
+    <p>Digite sua senha de acesso</p>
+    <label><input id="senha" type="password" inputmode="numeric" placeholder="••••" onkeydown="if(event.key==='Enter')entrar()"></label>
+    <button class="btn btn-cheio" onclick="entrar()">Entrar</button>
+  </div>`;
+}
+
 /* ============ RENDER ============ */
 const ABAS = [
   { id:"inicio", ico:"🏠", rot:"Início" },
@@ -783,18 +902,34 @@ const ABAS = [
 ];
 function render() {
   if (!pronto) return;
+  const sino = document.getElementById("sino");
+  const btnSair = document.getElementById("btn-sair");
+
+  // Sem login: mostra só a tela de senha
+  if (!perfil) {
+    document.getElementById("main").innerHTML = vLogin();
+    document.getElementById("nav").innerHTML = "";
+    sino.style.display = "none";
+    btnSair.style.display = "none";
+    return;
+  }
+
+  // Funcionário: acesso restrito à aba Estoque
+  const abasVisiveis = perfil === "func" ? ABAS.filter(a => a.id === "estoque") : ABAS;
+  if (perfil === "func") tab = "estoque";
+
   const views = { inicio:vInicio, estoque:vEstoque, compras:vCompras, contas:vContas, relatorios:vRelatorios };
   document.getElementById("main").innerHTML = views[tab]();
   const n = itensComprar();
-  document.getElementById("nav").innerHTML = ABAS.map(a => `
+  document.getElementById("nav").innerHTML = abasVisiveis.map(a => `
     <button class="${tab === a.id ? "ativo" : ""}" onclick="irPara('${a.id}')">
       <span class="ico">${a.ico}${a.id === "compras" && n > 0 ? `<span class="badge">${n}</span>` : ""}</span>
       <span class="rotulo">${a.rot}</span>
     </button>`).join("");
   const alertas = calcAlertas().length;
-  const sino = document.getElementById("sino");
-  sino.style.display = alertas > 0 ? "" : "none";
+  sino.style.display = perfil === "admin" && alertas > 0 ? "" : "none";
   document.getElementById("sino-n").textContent = alertas;
+  btnSair.style.display = "";
 }
 
 carregar();
